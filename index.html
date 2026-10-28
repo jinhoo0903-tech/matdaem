@@ -1,0 +1,610 @@
+<title>맞댐 데모</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: school board on the left, the 맞댐 extension panel on the right; stats bar on top. Stacks on phone. */
+:root{
+  --bg:#f3f4f1; --paper:#ffffff; --ink:#1b2330; --ink2:#48515e; --mute:#8b929d; --line:#e1e3dd;
+  --accent:#b8402e; --accent-ink:#ffffff; --navy:#1f3b63;
+  --panel:#1b2434; --panel-ink:#eef1f6; --panel-mute:#a2abbb; --panel-line:#30405a; --panel-card:#223049;
+  --ok:#2e7d4f; --warn:#b7791f; --bad:#8a8f99; --okbg:#e4f2e8; --warnbg:#fbf0d9; --badbg:#ebedf0;
+  --pro:#1d4ed8; --con:#c2410c; --neu:#6b7280; --off:#9ca3af; --hl:#fff3cf; --heat:#e0644f; --drift:#60a5fa;
+  --font:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1318; --paper:#171c24; --ink:#eceef2; --ink2:#c3c8d1; --mute:#8b929d; --line:#2a313b;
+  --accent:#e0644f; --accent-ink:#17110f; --navy:#9db7e0;
+  --panel:#0c1016; --panel-ink:#eef1f6; --panel-mute:#97a0b0; --panel-line:#2a313b; --panel-card:#161d2a;
+  --ok:#6fcf97; --warn:#e2b45e; --bad:#9aa1ab; --okbg:#173224; --warnbg:#3a2c12; --badbg:#242932;
+  --pro:#7ea2ff; --con:#fb923c; --neu:#9ca3af; --off:#6b7280; --hl:#3b3416; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0f1318; --paper:#171c24; --ink:#eceef2; --ink2:#c3c8d1; --mute:#8b929d; --line:#2a313b;
+  --accent:#e0644f; --accent-ink:#17110f; --navy:#9db7e0;
+  --panel:#0c1016; --panel-ink:#eef1f6; --panel-mute:#97a0b0; --panel-line:#2a313b; --panel-card:#161d2a;
+  --ok:#6fcf97; --warn:#e2b45e; --bad:#9aa1ab; --okbg:#173224; --warnbg:#3a2c12; --badbg:#242932;
+  --pro:#7ea2ff; --con:#fb923c; --neu:#9ca3af; --off:#6b7280; --hl:#3b3416; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.55;margin:0}
+.wrap{max-width:1220px;margin:0 auto;padding-block:14px 40px;padding-inline:16px}
+header.top{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{font-size:22px;font-weight:700;margin:0}
+.brand .tag{font-size:12px;color:var(--mute)}
+select,button,textarea{font:inherit;color:inherit}
+select{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:6px 10px;max-width:100%}
+.btn{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer}
+.btn:hover{border-color:var(--ink2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.small{padding:3px 9px;font-size:12px}
+.btn:focus-visible,select:focus-visible,textarea:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* stats bar */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.stat .k{font-size:11px;color:var(--mute);letter-spacing:.04em;text-transform:uppercase}
+.stat .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat .s{font-size:11.5px;color:var(--ink2)}
+.dist{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:6px;background:var(--line)}
+.dist i{display:block;height:100%}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--ink2);margin-top:4px}
+.legend b{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+/* board */
+.site{background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0}
+.sitebar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);font-size:12px;color:var(--mute)}
+.sitebar .nm{flex:1;font-weight:600;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ext{width:22px;height:22px;border-radius:5px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.post{padding:14px 18px 10px;border-bottom:1px solid var(--line)}
+.post h2{margin:0 0 4px;font-size:16px;text-wrap:balance}
+.post .meta{font-size:12px;color:var(--mute)}
+.post p{margin:8px 0 0;color:var(--ink2);font-size:13px}
+.srcs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.src{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:999px;color:var(--navy);cursor:pointer;background:var(--bg)}
+.srcbox{margin:8px 18px 0;padding:10px 12px;border:1px dashed var(--line);border-radius:6px;font-size:12px;color:var(--ink2);background:var(--bg)}
+.srcbox b{display:block;color:var(--ink);margin-bottom:3px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;padding:10px 18px;border-bottom:1px solid var(--line)}
+.chip{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--paper);cursor:pointer}
+.chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.list{max-height:70vh;overflow:auto}
+.cm{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;padding:10px 18px;border-bottom:1px solid var(--line);position:relative;transition:background .2s}
+.cm.reply{padding-left:48px;background:color-mix(in srgb,var(--bg) 55%,var(--paper))}
+.cm.hl{background:var(--hl)}
+.cm.target{box-shadow:inset 3px 0 0 var(--accent)}
+.av{width:28px;height:28px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:10px;font-weight:600;color:var(--ink2);border:1px solid var(--line)}
+.who{font-size:12px;color:var(--mute);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.who b{color:var(--ink);font-weight:600}
+.side{font-size:10.5px;padding:1px 6px;border-radius:999px;border:1px solid currentColor}
+.side.찬성{color:var(--pro)}.side.반대{color:var(--con)}.side.중립{color:var(--neu)}.side.논점외{color:var(--off)}
+.txt{margin:3px 0 5px;white-space:pre-wrap;word-break:break-word}
+.txt a{color:var(--pro);text-decoration:underline dotted}
+.act{display:flex;gap:6px;align-items:center}
+.md{background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600;cursor:pointer}
+.md:hover,.md.on{background:var(--accent);color:var(--accent-ink)}
+.compose{padding:12px 18px 14px;border-top:1px solid var(--line)}
+.compose textarea{width:100%;min-height:58px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;resize:vertical}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:8px;flex-wrap:wrap}
+.nudge{margin-top:10px;border:1px solid var(--warn);background:var(--warnbg);border-radius:8px;padding:10px 12px;font-size:13px}
+.nudge b{display:block;margin-bottom:4px}
+.nudge .row{justify-content:flex-start}
+.nudge .off{margin-left:auto;font-size:12px;color:var(--mute);background:none;border:none;cursor:pointer;text-decoration:underline}
+.note{font-size:12px;color:var(--mute)}
+.live{margin-top:10px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg);display:grid;gap:8px}
+.live .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11.5px;color:var(--mute);letter-spacing:.04em;text-transform:uppercase}
+.live .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12.5px}
+.sig{display:inline-flex;gap:5px;align-items:center;font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:var(--paper)}
+.sig.on{border-color:var(--warn);color:var(--warn);background:var(--warnbg)}
+.sig.ok{border-color:var(--ok);color:var(--ok);background:var(--okbg)}
+.gauge{display:grid;grid-template-columns:72px minmax(0,1fr) 36px;gap:8px;align-items:center;font-size:12px}
+.gauge .bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.gauge .bar i{display:block;height:100%;transition:width .25s}
+.gauge .v{font-variant-numeric:tabular-nums;text-align:right;color:var(--ink2)}
+.live .ai-why{font-size:12px;color:var(--ink2)}
+.bias{display:grid;gap:5px}
+.bias div{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;align-items:center;font-size:12px}
+.bias .bars{display:flex;gap:4px;align-items:center}
+.bias .b{height:8px;border-radius:2px;min-width:2px}
+.bias .c{font-size:11px;color:var(--panel-mute);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* dashboard */
+.dash{display:none}
+body.dash-mode .grid,body.dash-mode .stats{display:none}
+body.dash-mode .dash{display:grid;gap:14px}
+.dash .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.tile .k{font-size:11px;color:var(--mute);letter-spacing:.04em;text-transform:uppercase}
+.tile .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.tile .s{font-size:11.5px;color:var(--ink2)}
+.tile.live .v{color:var(--accent)}
+.dash .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.dcard{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.dcard h3{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.hbar{display:grid;grid-template-columns:110px minmax(0,1fr) 44px;gap:8px;align-items:center;font-size:12.5px;margin:4px 0}
+.hbar .bar{height:10px;border-radius:3px;background:var(--line);overflow:hidden}
+.hbar .bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.hbar .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.feed{display:grid;gap:6px;max-height:360px;overflow:auto;font-size:12.5px}
+.feed div{display:grid;grid-template-columns:52px 70px minmax(0,1fr);gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--line)}
+.feed .t{color:var(--mute);font-variant-numeric:tabular-nums;font-size:11.5px}
+.feed .ty{font-size:11px;padding:1px 7px;border-radius:999px;background:var(--bg);border:1px solid var(--line);text-align:center;white-space:nowrap}
+.sess{display:grid;gap:6px;font-size:12.5px}
+.sess div{display:grid;grid-template-columns:80px minmax(0,1fr) auto;gap:8px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.sess .me{color:var(--accent);font-weight:600}
+.urlbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px}
+.urlbox code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;user-select:all;word-break:break-all}
+.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:middle;animation:pl 1.6s ease-in-out infinite}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+/* panel */
+.panel{background:var(--panel);color:var(--panel-ink);border-radius:10px;padding:14px 16px 16px;min-width:0;position:sticky;top:env(safe-area-inset-top,0px);display:grid;gap:12px}
+@media (max-width:900px){.panel{position:static}}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel h3{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--panel-mute);font-weight:600}
+.ai{font-size:11px;color:var(--panel-mute)}
+.box{border:1px solid var(--panel-line);border-radius:8px;padding:10px 12px}
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.step{background:var(--panel-card);border-radius:6px;padding:8px 8px;min-width:0}
+.step .n{font-size:10.5px;color:var(--panel-mute)}
+.step .v{font-size:13px;font-weight:600;line-height:1.3}
+.step.live{outline:1px solid var(--accent)}
+.card .ch{padding:0 0 8px;border-bottom:1px solid var(--panel-line);display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.card .ch .t{font-weight:600;font-size:14px}
+.card .ch .sc{font-size:11px;color:var(--panel-mute);width:100%}
+.empty{padding:22px 10px;text-align:center;color:var(--panel-mute);font-size:13px}
+.sec{padding:9px 0;border-bottom:1px solid var(--panel-line)}
+.sec:last-of-type{border-bottom:none}
+.sec h4{margin:0 0 6px;font-size:11.5px;letter-spacing:.05em;color:var(--panel-mute);font-weight:600;display:flex;gap:8px;align-items:center}
+.sec h4 .n{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--panel-line);color:var(--panel-ink);font-size:11px}
+.sec ol,.sec ul{margin:0;padding-left:18px;display:grid;gap:5px}
+.sec li{font-size:13.5px}
+.ref{display:inline-block;font-size:10.5px;padding:0 5px;border-radius:4px;border:1px solid var(--panel-line);color:var(--panel-mute);margin-left:4px;cursor:pointer;vertical-align:1px;font-variant-numeric:tabular-nums}
+.ref:hover{border-color:var(--panel-ink);color:var(--panel-ink)}
+.ev{display:grid;gap:6px}
+.ev div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:start;font-size:13px}
+.st{font-size:10.5px;padding:2px 7px;border-radius:999px;white-space:nowrap;font-weight:600;margin-top:2px}
+.st.verified{background:var(--okbg);color:var(--ok)}.st.summary{background:var(--warnbg);color:var(--warn)}.st.unverified{background:var(--badbg);color:var(--bad)}
+.ev small{display:block;color:var(--panel-mute);font-size:11.5px}
+details{font-size:12.5px}
+details summary{cursor:pointer;color:var(--panel-mute);font-weight:600;font-size:11.5px;letter-spacing:.04em}
+details .inc{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}
+details .exc{display:grid;gap:3px;margin-top:4px}
+.cf{padding-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cf .btn{background:transparent;border-color:var(--panel-line);color:var(--panel-ink)}
+.cf .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.cf .fb{margin-left:auto;font-size:11.5px;color:var(--panel-mute);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.cf .fb button{font-size:11px;background:none;border:1px solid var(--panel-line);color:var(--panel-mute);border-radius:4px;padding:2px 6px;cursor:pointer}
+.rub{display:grid;gap:6px}
+.rub div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;font-size:12.5px;align-items:start}
+.rub .r{font-size:10.5px;padding:2px 7px;border-radius:999px;font-weight:600;white-space:nowrap;margin-top:1px}
+.rub .pass{background:var(--okbg);color:var(--ok)}.rub .warn{background:var(--warnbg);color:var(--warn)}.rub .wait{background:var(--badbg);color:var(--bad)}
+.rub small{display:block;color:var(--panel-mute);font-size:11px}
+.why{display:grid;gap:6px;font-size:12.5px}
+.why div{display:grid;grid-template-columns:22px minmax(0,1fr);gap:6px}
+.why b{color:var(--panel-ink)}
+.why .n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--panel-line);font-size:11px}
+.temp svg{width:100%;height:auto;display:block}
+.lg{display:flex;gap:14px;font-size:11.5px;color:var(--panel-mute);margin-top:4px;flex-wrap:wrap}
+.lg i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.status{font-size:12px;color:var(--panel-mute);min-height:16px}
+.spin{display:inline-block;width:10px;height:10px;border:2px solid var(--panel-mute);border-top-color:transparent;border-radius:50%;animation:r 1s linear infinite;vertical-align:-1px;margin-right:6px}
+@keyframes r{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.cm{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>맞댐</h1><span class="tag">반박 이전에, 상대 주장의 최선 버전을 - 학생 자유게시판 시연 (가상 데이터) · 댓글 실시간 편향 분석</span></div>
+    <div class="ctrl" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label for="preset" class="tag">스레드 </label>
+      <select id="preset"><option value="yaja">기숙사 야자 선택제 전환</option><option value="festival">축제 예산 300만 원 전환</option></select>
+      <button class="btn small" id="toDash">실시간 대시보드</button><button class="btn small" id="toDemo" hidden>데모로 돌아가기</button></div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="grid">
+    <section class="site" aria-label="학생 자유게시판">
+      <div class="sitebar"><span class="nm" id="board"></span><span class="ext" title="맞댐 확장 켜짐">맞</span></div>
+      <div class="post" id="post"></div>
+      <div class="srcbox" id="srcbox" hidden></div>
+      <div class="filters" id="filters"></div>
+      <div class="list" id="thread"></div>
+      <div class="compose" id="compose">
+        <textarea id="draft" placeholder="댓글을 입력하세요 (가상 게시판)"></textarea>
+        <div class="live" id="live"><div class="hd"><span>실시간 분석 · 입력 중인 댓글</span><span id="liveMode">규칙 기반</span></div><div class="note" style="margin:0">댓글을 입력하면 입장·편향 신호·근거 상태·온도 변화를 바로 보여줍니다. 결과는 작성자에게만 보이며 저장·공개되지 않습니다.</div></div>
+        <div id="nudge" class="nudge" hidden></div>
+        <div class="row"><span class="note">전송 전 안내는 1회만 표시되고 언제든 끌 수 있습니다. 차단·수정 강제 없음.</span><button class="btn primary" id="send">댓글 등록</button></div>
+      </div>
+    </section>
+
+    <aside class="panel" aria-label="맞댐 확장 패널">
+      <div class="ph"><h3>맞댐 · 확장 패널</h3><span class="ai" id="aiState">AI 연결 확인 중…</span></div>
+
+      <div class="box">
+        <h3 style="margin-bottom:8px">처리 과정 · 이 스레드</h3>
+        <div class="pipe" id="pipe"></div>
+      </div>
+
+      <div class="box card" id="card"><div class="empty">반박하고 싶은 댓글의 <b>[맞대보기]</b>를 누르면<br>그 댓글이 속한 입장의 최선 버전을 카드 1장으로 보여줍니다.<br><small>또는 <b>양쪽 카드</b>를 함께 생성해 대칭성을 확인할 수 있습니다.</small></div></div>
+      <div class="status" id="status"></div>
+
+      <div class="box">
+        <h3 style="margin-bottom:8px">품질 루브릭 · 카드 자동 검증</h3>
+        <div class="rub" id="rub"></div>
+      </div>
+
+      <div class="box">
+        <h3 style="margin-bottom:8px">"AI는 판단하지 않는다"가 성립하는 이유</h3>
+        <div class="why">
+          <div><span class="n">1</span><span><b>판정 금지</b> - 카드는 어느 쪽이 옳은지 말하지 않는다. 루브릭이 평가어('틀렸다', '억지' 등)를 검사해 걸러낸다.</span></div>
+          <div><span class="n">2</span><span><b>기준 공개</b> - '최선 버전'을 고른 것이 아니라 <b>어떤 댓글을 포함·제외했는지와 그 이유</b>를 모두 보여준다. 선택은 추적 가능하다.</span></div>
+          <div><span class="n">3</span><span><b>대칭 생성</b> - 양쪽 카드를 같은 규칙으로 만든다. 한쪽만 좋게 쓰면 대칭성 검사에서 드러난다.</span></div>
+          <div><span class="n">4</span><span><b>사용자 검증</b> - 모든 문장은 원댓글 번호에 묶여 있고, 원작성자가 '내 주장 아님'을 표시할 수 있다. 판단은 이용자에게 남는다.</span></div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h3 style="margin-bottom:8px">편향 신호 집계 · 입장별 (개인 점수 없음)</h3>
+        <div class="bias" id="bias"></div>
+        <div class="note" style="margin-top:6px">본문 댓글만 집계. 한 댓글에 여러 신호가 있을 수 있습니다. 찬성 <i style="display:inline-block;width:10px;height:8px;background:var(--pro);border-radius:2px"></i> 반대 <i style="display:inline-block;width:10px;height:8px;background:var(--con);border-radius:2px"></i> 중립 <i style="display:inline-block;width:10px;height:8px;background:var(--neu);border-radius:2px"></i> 논점외 <i style="display:inline-block;width:10px;height:8px;background:var(--off);border-radius:2px"></i></div>
+      </div>
+
+      <div class="box temp">
+        <h3>온도 지표 · 스레드 단위</h3>
+        <svg id="chart" viewBox="0 0 340 110" role="img" aria-label="시간대별 논점 이탈도와 감정 격화도"></svg>
+        <div class="lg"><span><i style="background:var(--heat)"></i>감정 격화도</span><span><i style="background:var(--drift)"></i>논점 이탈도</span><span id="tempSum"></span></div>
+        <div class="note" style="margin-top:4px">1시간 구간별 평균. 개인별 점수는 계산하지 않습니다.</div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="dash" id="dash" aria-label="실시간 대시보드">
+    <div class="dcard"><div class="urlbox"><span class="pulse"></span><b>맞댐 데모 실시간 대시보드</b><span class="note">지금 데모를 열어 둔 모든 화면의 활동을 모아 보여줍니다 · 개인 식별 없음 · 세션 단위 집계</span><span style="margin-left:auto" class="note" id="dashState">연결 확인 중…</span></div>
+      <div class="urlbox" style="margin-top:8px"><span class="note">대시보드 주소</span><code id="dashUrl"></code><button class="btn small" id="copyUrl">복사</button><span class="note">같은 주소로 열리며, 오른쪽 위 「실시간 대시보드」 버튼으로 전환합니다 (링크는 항상 데모 화면으로 열림)</span></div></div>
+    <div class="tiles" id="dtiles"></div>
+    <div class="two">
+      <div class="dcard"><h3>편향 신호 · 등록된 댓글 기준</h3><div id="dsig"></div></div>
+      <div class="dcard"><h3>입장 분포 · 등록된 댓글</h3><div id="dstance"></div><h3 style="margin-top:12px">루브릭 결과</h3><div id="drub"></div></div>
+    </div>
+    <div class="two">
+      <div class="dcard"><h3>실시간 활동 피드</h3><div class="feed" id="dfeed"></div></div>
+      <div class="dcard"><h3>열려 있는 세션</h3><div class="sess" id="dsess"></div><h3 style="margin-top:12px">누적 (저장분 포함)</h3><div id="dcum" class="note"></div></div>
+    </div>
+  </section>
+</div>
+
+<script src="data.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let T=null, C=[], key="yaja", filter="전체", sampleFn=null, aiOn=false, cardTarget=null, ctl=null, nudged=false, nudgeOff=false, lastCards={};
+const SIDES=["찬성","반대","중립","논점외"]; const COL={찬성:"var(--pro)",반대:"var(--con)",중립:"var(--neu)",논점외:"var(--off)"};
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function load(k){
+  key=k; T=THREADS[k]; C=expandThread(T, 190, k==="yaja"?20261019:20261023); filter="전체"; lastCards={};
+  $("#board").textContent=T.board;
+  $("#post").innerHTML=`<h2>${esc(T.title)}</h2><div class="meta">${esc(T.period)} · 참여 ${authors().length}명 · 댓글 ${C.length}개</div><p>${esc(T.body)}</p><div class="srcs">${Object.entries(T.sources).map(([k,s])=>`<span class="src" data-s="${k}">${k} · ${esc(s.name)}</span>`).join("")}</div>`;
+  $("#post").querySelectorAll(".src").forEach(b=>b.onclick=()=>showSrc(b.dataset.s));
+  $("#srcbox").hidden=true;
+  renderStats(); renderFilters(); renderThread(); previewPt=null; drawChart(); resetCard(); renderPipe(); renderRubric(null); renderBias(); $("#draft").value=""; liveUpdate();
+}
+function authors(){ return [...new Set(C.map(c=>c.who))]; }
+function showSrc(k){ const s=T.sources[k]; $("#srcbox").hidden=false; $("#srcbox").innerHTML=`<b>[${k}] ${esc(s.name)}</b>${esc(s.text)}`; }
+function renderStats(){
+  const n=C.length, by=Object.fromEntries(SIDES.map(s=>[s,C.filter(c=>c.side===s).length]));
+  const subst=C.filter(c=>!c.short).length, linked=C.filter(c=>c.links&&c.links.length).length;
+  $("#stats").innerHTML=`
+    <div class="stat"><div class="k">참여자</div><div class="v">${authors().length}명</div><div class="s">재학생 312명 중 · 익명</div></div>
+    <div class="stat"><div class="k">댓글</div><div class="v">${n}개</div><div class="s">본문 댓글 ${subst} · 짧은 반응·답글 ${n-subst}</div></div>
+    <div class="stat"><div class="k">근거 링크</div><div class="v">${Object.keys(T.sources).length}건</div><div class="s">링크를 인용한 댓글 ${linked}개</div></div>
+    <div class="stat" style="grid-column:span 2"><div class="k">입장 분포 (AI 분류)</div>
+      <div class="dist">${SIDES.map(s=>`<i style="width:${(by[s]/n*100).toFixed(1)}%;background:${COL[s]}"></i>`).join("")}</div>
+      <div class="legend">${SIDES.map(s=>`<span><b style="background:${COL[s]}"></b>${s} ${by[s]} (${Math.round(by[s]/n*100)}%)</span>`).join("")}</div></div>`;
+}
+function renderFilters(){
+  $("#filters").innerHTML=["전체",...SIDES,"링크 인용"].map(f=>`<button class="chip ${f===filter?"on":""}" data-f="${f}">${f}</button>`).join("");
+  $("#filters").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{filter=b.dataset.f; renderFilters(); renderThread();});
+}
+function renderThread(){
+  const show = C.filter(c => filter==="전체" || (filter==="링크 인용" ? (c.links&&c.links.length) : c.side===filter));
+  $("#thread").innerHTML = show.map(c=>{
+    const txt = esc(c.text).replace(/\((S\d)\)/g,(m,k)=> T.sources[k]?`<a href="#src-${k}" data-s="${k}">(${k})</a>`:m);
+    return `<div class="cm ${c.reply?"reply":""}" id="c${c.id}"><div class="av">${esc(c.who).replace("익명 ","")}</div><div style="min-width:0">
+      <div class="who"><b>${esc(c.who)}</b><span>#${c.id}</span><span class="side ${c.side}">${c.side}</span><span>${hhmm(c.t)}</span>${c.reply?`<span>↳ #${c.reply}</span>`:""}</div>
+      <div class="txt">${txt}</div>
+      ${c.short?"":`<div class="act"><button class="md" data-id="${c.id}">맞대보기</button><span class="note">답글 · 공감</span></div>`}</div></div>`; }).join("");
+  $("#thread").querySelectorAll(".md").forEach(b=>b.onclick=()=>openCard(+b.dataset.id));
+  $("#thread").querySelectorAll("a[data-s]").forEach(a=>a.onclick=e=>{e.preventDefault(); showSrc(a.dataset.s); $("#srcbox").scrollIntoView({block:"nearest"});});
+}
+function hhmm(t){ const base = key==="yaja"? 20.17 : 12.5; const h = base + t; const d = Math.floor(h/24); const hh = Math.floor(h%24), mm = Math.round((h%1)*60); return (d?`+${d}일 `:"")+String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0"); }
+function highlight(ids){ document.querySelectorAll(".cm.hl").forEach(e=>e.classList.remove("hl")); if(filter!=="전체"){filter="전체"; renderFilters(); renderThread();} ids.forEach(id=>document.getElementById("c"+id)?.classList.add("hl")); document.getElementById("c"+ids[0])?.scrollIntoView({block:"center",behavior:"smooth"}); }
+
+// ---------- pipeline ----------
+function renderPipe(live, extra){
+  const n=C.length, subst=C.filter(c=>!c.short).length;
+  const steps=[["① 수집",`댓글 ${n}개 + 링크 ${Object.keys(T.sources).length}건`],["② 입장 분류",`찬성 ${C.filter(c=>c.side==="찬성").length} · 반대 ${C.filter(c=>c.side==="반대").length} · 중립 ${C.filter(c=>c.side==="중립").length} · 논점외 ${C.filter(c=>c.side==="논점외").length}`],["③ 근거 인출(RAG)",extra?.rag||`스레드 본문 ${subst}개 + 링크 원문만`],["④ 카드 생성",extra?.gen||"요청 시 · LLM API"],["⑤ 품질 검증",extra?.rub||"루브릭 4항목 자동"]];
+  $("#pipe").innerHTML=steps.map((s,i)=>`<div class="step ${live===i?"live":""}"><div class="n">${s[0]}</div><div class="v">${esc(s[1])}</div></div>`).join("");
+}
+
+// ---------- chart ----------
+function drawChart(){
+  const svg=$("#chart"); const bins={}; C.forEach(c=>{ const b=Math.floor(c.t); (bins[b]=bins[b]||[]).push(c); });
+  const ks=Object.keys(bins).map(Number).sort((a,b)=>a-b); const pts=ks.map(k=>({k, heat:avg(bins[k].map(c=>c.heat)), drift:avg(bins[k].map(c=>c.drift)), n:bins[k].length}));
+  const W=340,H=110,L=26,R=previewPt?34:8,Tp=10,B=22,n=pts.length; const x=i=>L+(W-L-R)*(n===1?0:i/(n-1)), y=v=>Tp+(H-Tp-B)*(1-v);
+  const path=kk=>pts.map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(p[kk]).toFixed(1)}`).join(" ");
+  let g=`<g font-size="9" fill="var(--panel-mute)" font-family="inherit">`;
+  [0,.5,1].forEach(v=>{ g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--panel-line)"/><text x="${L-4}" y="${y(v)+3}" text-anchor="end">${v===0?"낮음":v===1?"높음":""}</text>`; });
+  pts.forEach((p,i)=>{ if(i%Math.ceil(n/8)===0||i===n-1) g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${hhmm(p.k)}</text>`; });
+  g+=`</g><path d="${path("heat")} L${x(n-1)},${y(0)} L${x(0)},${y(0)} Z" fill="var(--heat)" opacity=".12"/><path d="${path("drift")}" fill="none" stroke="var(--drift)" stroke-width="1.8"/><path d="${path("heat")}" fill="none" stroke="var(--heat)" stroke-width="1.8"/>`;
+  if (previewPt){ const px=W-R-6; g+=`<line x1="${x(n-1)}" x2="${px}" y1="${y(pts[n-1].heat)}" y2="${y(previewPt.heat)}" stroke="var(--heat)" stroke-dasharray="3 3"/><line x1="${x(n-1)}" x2="${px}" y1="${y(pts[n-1].drift)}" y2="${y(previewPt.drift)}" stroke="var(--drift)" stroke-dasharray="3 3"/><circle cx="${px}" cy="${y(previewPt.heat)}" r="3.5" fill="none" stroke="var(--heat)" stroke-width="1.5"/><circle cx="${px}" cy="${y(previewPt.drift)}" r="3.5" fill="none" stroke="var(--drift)" stroke-width="1.5"/><text x="${px}" y="${H-8}" text-anchor="end" font-size="9" fill="var(--panel-mute)">입력 중</text>`; }
+  svg.innerHTML=g;
+  let peak=pts.reduce((a,p,i)=>p.drift>pts[a].drift?i:a,0); let hot=pts.reduce((a,p,i)=>p.heat>pts[a].heat?i:a,0);
+  $("#tempSum").textContent=`이탈 최고 ${hhmm(pts[peak].k)} · 격화 최고 ${hhmm(pts[hot].k)}`;
+}
+function avg(a){ return a.length? a.reduce((s,v)=>s+(v||0),0)/a.length : 0; }
+
+// ---------- card ----------
+function resetCard(){ cardTarget=null; document.querySelectorAll(".md.on,.cm.target").forEach(e=>e.classList.remove("on","target")); $("#card").innerHTML=`<div class="empty">반박하고 싶은 댓글의 <b>[맞대보기]</b>를 누르면<br>그 댓글이 속한 입장의 최선 버전을 카드 1장으로 보여줍니다.<br><small>또는 <button class="btn small" id="both" style="margin-top:6px">양쪽 카드 함께 생성</button></small></div>`; $("#status").textContent=""; $("#both").onclick=()=>openBoth(); }
+function sidesText(){ return C.map(c=>`#${c.id} [${c.side}]${c.reply?` (답글→#${c.reply})`:""}: ${c.text}`).join("\n"); }
+function sourcesText(){ return Object.entries(T.sources).map(([k,s])=>`[${k}] ${s.name}\n${s.text}`).join("\n\n"); }
+function buildPrompt(side, targetId){
+  return `당신은 '맞댐'이라는 대화 보조 도구입니다. 아래는 학교 학생 자유게시판의 토론 스레드입니다. 이용자가 ${targetId?`댓글 #${targetId}을(를) 반박하려고 합니다. 댓글 #${targetId}이(가) 속한 입장`:`'${side}' 입장`}의 **가장 설득력 있는 버전(스틸맨)**을, 스레드 안의 같은 입장 댓글들을 종합해 카드 1장으로 재구성하세요.
+
+엄격한 규칙:
+1. 근거는 아래 스레드 본문과 '링크된 원문'에서만. 외부 지식·통계·사례를 보태지 마세요.
+2. 어느 쪽이 옳은지 판정하지 마세요. '틀렸다', '옳다', '억지', '비합리적' 같은 평가어를 쓰지 마세요. 어떤 개인도 평가하지 마세요.
+3. 인신공격·비꼼·동기 의심·논점 이탈 댓글은 '주장'에 포함하지 말고 excluded에 사유와 함께 적으세요. 짧은 반응("ㅇㅈ", "+1" 등)은 included에 넣지 마세요.
+4. 각 주장에는 근거가 된 댓글 번호(refs)를 반드시 붙이세요. 번호 없는 주장은 쓰지 마세요.
+5. 근거 상태: "verified"(링크 원문에서 직접 확인), "summary"(원문이 있으나 조건·범위가 빠진 인용), "unverified"(스레드 안에 출처 없음). note에 판단 이유를 한 문장으로.
+6. 공통 전제는 양쪽이 실제로 합의한 지점만. 없으면 빈 배열.
+7. 모든 문장은 한국어, 각 항목 1~2문장.
+
+출력은 아래 JSON 객체 하나만:
+{"side":"입장 이름","included":[댓글번호...],"excluded":[{"id":번호,"reason":"사유"}],"claims":[{"text":"주장","refs":[번호]},{"text":"주장","refs":[번호]},{"text":"주장","refs":[번호]}],"not":["주장하지 않는 것 1","2","3"],"evidence":[{"claim":"근거 요약","status":"verified|summary|unverified","source":"S1 또는 null","note":"이유"}],"common":["공통 전제"]}
+
+[글 제목] ${T.title}
+[본문] ${T.body}
+
+[스레드 댓글 - 대괄호는 입장 분류]
+${sidesText()}
+
+[링크된 원문]
+${sourcesText()}`;
+}
+async function getCard(side, targetId){
+  const pre=T.cards?.[side];
+  if (aiOn && sampleFn){
+    ctl=new AbortController();
+    try{ const d=await sampleFn.json(buildPrompt(side,targetId),{signal:ctl.signal,modelTier:"default",cache:{gcTime:3600000}}); return {d, how:"AI 생성(LLM API) · 근거 범위: 이 스레드 + 링크 원문"}; }
+    catch(e){ if(e.code==="cancelled") throw e; if(e.code==="not_granted"||e.code==="sampling_disabled"){aiOn=false; $("#aiState").textContent="AI 사용 안 함 · 미리 생성된 카드만";} if(pre) return {d:pre, how:"미리 생성된 카드 (AI 호출 실패: "+e.code+")"}; throw e; }
+  }
+  if (pre) return {d:pre, how:"미리 생성된 카드 (가상 데이터 시연)"};
+  throw {code:"no_card"};
+}
+async function openCard(id){
+  const target=C.find(c=>c.id===id); if(!target) return; if(ctl) ctl.abort();
+  cardTarget=id; document.querySelectorAll(".md.on,.cm.target").forEach(e=>e.classList.remove("on","target"));
+  document.querySelector(`.md[data-id="${id}"]`)?.classList.add("on"); document.getElementById("c"+id)?.classList.add("target");
+  const side = (target.side==="찬성"||target.side==="반대") ? target.side : null;
+  if(!side){ $("#card").innerHTML=`<div class="empty">#${id}은(는) '${target.side}'으로 분류되어 특정 입장의 카드를 만들지 않습니다.<br>찬성·반대 댓글에서 [맞대보기]를 눌러 주세요.</div>`; return; }
+  renderPipe(3,{gen:`#${id} → ${side} 입장 재구성 중`}); $("#card").innerHTML=`<div class="empty"><span class="spin"></span>#${id}이(가) 속한 '${side}' 입장을 ${C.filter(c=>c.side===side&&!c.short).length}개 댓글에서 모으는 중…</div>`; $("#status").textContent="";
+  try{ const {d,how}=await getCard(side,id); if(cardTarget!==id) return; lastCards[side]=d; renderCard(side,d,how,id); track("card",`#${id} → ${side} 카드`,{ai:how.startsWith("AI")}); }
+  catch(e){ if(e.code==="cancelled") return; $("#card").innerHTML=`<div class="empty">${e.code==="no_card"?"이 스레드는 미리 생성된 카드가 없습니다. AI 연결을 허용하면 생성됩니다.":"카드를 만들지 못했습니다 ("+esc(e.code||"error")+")"}</div>`; renderPipe(); }
+}
+async function openBoth(){
+  if(ctl) ctl.abort(); cardTarget="both"; renderPipe(3,{gen:"찬성·반대 카드 대칭 생성 중"});
+  $("#card").innerHTML=`<div class="empty"><span class="spin"></span>양쪽 입장을 같은 규칙으로 재구성하는 중…</div>`;
+  try{ const a=await getCard("찬성"); const b=await getCard("반대"); lastCards={찬성:a.d, 반대:b.d};
+    $("#card").innerHTML=`<div class="ch"><span class="t">양쪽 카드 · 대칭 비교</span><span class="sc">${esc(a.how)}</span></div>`+["찬성","반대"].map(s=>{const d=lastCards[s]; return `<div class="sec"><h4><span class="n">${s[0]}</span>${esc(d.side)} - 주장 ${(d.claims||[]).length} · 근거 ${(d.evidence||[]).length} · 포함 ${(d.included||[]).length} · 제외 ${(d.excluded||[]).length}</h4><ol>${(d.claims||[]).map(c=>`<li>${esc(c.text)}${refs(c.refs)}</li>`).join("")}</ol></div>`;}).join("")+`<div class="cf"><button class="btn small" id="cfA">찬성 카드 전체</button><button class="btn small" id="cfB">반대 카드 전체</button><button class="btn small" id="cfSkip">닫기</button></div>`;
+    $("#card").querySelectorAll(".ref").forEach(r=>r.onclick=()=>highlight([+r.dataset.ref]));
+    $("#cfA").onclick=()=>renderCard("찬성",lastCards["찬성"],a.how); $("#cfB").onclick=()=>renderCard("반대",lastCards["반대"],b.how); $("#cfSkip").onclick=resetCard;
+    renderPipe(4,{gen:"양쪽 생성 완료",rub:"대칭성 포함 검증"}); renderRubric(lastCards); track("both","찬성·반대 대칭 생성");
+  }catch(e){ if(e.code==="cancelled") return; $("#card").innerHTML=`<div class="empty">${e.code==="no_card"?"이 스레드는 미리 생성된 카드가 없습니다. AI 연결을 허용하면 생성됩니다.":"카드를 만들지 못했습니다 ("+esc(e.code||"error")+")"}</div>`; renderPipe(); }
+}
+const refs = r => (r||[]).map(n=>`<span class="ref" data-ref="${n}">#${n}</span>`).join("");
+function renderCard(side,d,how,targetId){
+  const S=T.sources; const stName={verified:"원문 확인됨",summary:"요약 인용",unverified:"출처 미확인"};
+  const ev=(d.evidence||[]).map(e=>{const st=stName[e.status]?e.status:"unverified"; const src=e.source&&S[e.source]?`<a href="#src-${e.source}" data-s="${e.source}" style="color:inherit">${esc(S[e.source].name)}</a>`:""; return `<div><span class="st ${st}">${stName[st]}</span><span>${esc(e.claim)}<small>${src?src+" · ":""}${esc(e.note||"")}</small></span></div>`;}).join("");
+  $("#card").innerHTML=`
+    <div class="ch"><span class="t">스틸맨 카드 · ${targetId?`#${targetId}이(가) 속한 입장`:side+" 입장"}</span><span class="side ${side}">${esc(d.side||side)}</span><span class="sc">${esc(how)} · 요청한 사람에게만 보이며 공개되지 않습니다</span></div>
+    <div class="sec"><h4><span class="n">1</span>실제 주장</h4><ol>${(d.claims||[]).map(c=>`<li>${esc(c.text)}${refs(c.refs)}</li>`).join("")}</ol></div>
+    <div class="sec"><h4><span class="n">2</span>주장하지 않는 것</h4><ul>${(d.not||[]).map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>
+    <div class="sec"><h4><span class="n">3</span>근거의 상태</h4><div class="ev">${ev||"<div><span class='st unverified'>출처 미확인</span><span>스레드 안에 근거 없음</span></div>"}</div></div>
+    <div class="sec"><h4><span class="n">4</span>양측 공통 전제</h4>${(d.common||[]).length?`<ul>${d.common.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:`<div class="note">합의 지점 없음</div>`}</div>
+    <div class="sec"><details><summary>재구성 기준 공개 - 포함 ${(d.included||[]).length}개 · 제외 ${(d.excluded||[]).length}개</summary>
+      <div class="inc">${(d.included||[]).map(n=>`<span class="ref" data-ref="${n}">#${n}</span>`).join("")||"<span class='note'>없음</span>"}</div>
+      <div class="exc">${(d.excluded||[]).map(x=>`<div><span class="ref" data-ref="${x.id}">#${x.id}</span> <span class="note">${esc(x.reason)}</span></div>`).join("")}</div>
+      <div class="note" style="margin-top:6px">같은 입장의 짧은 반응·답글은 자동으로 제외됩니다.</div></details></div>
+    <div class="cf"><button class="btn small" id="cfOrig">원문 보기</button><button class="btn small primary" id="cfWrite">댓글 쓰기</button><button class="btn small" id="cfOther">상대 카드도 보기</button><button class="btn small" id="cfSkip">무시</button>
+      <span class="fb">이 복원이 틀렸다면: <button data-fb="notmine">내 주장 아님</button><button data-fb="missing">빠진 근거</button></span></div>`;
+  $("#card").querySelectorAll(".ref").forEach(r=>r.onclick=()=>highlight([+r.dataset.ref]));
+  $("#card").querySelectorAll("a[data-s]").forEach(a=>a.onclick=e=>{e.preventDefault(); showSrc(a.dataset.s); $("#srcbox").scrollIntoView({block:"center"});});
+  $("#cfOrig").onclick=()=>highlight((d.claims||[]).flatMap(c=>c.refs||[]));
+  $("#cfWrite").onclick=()=>{ $("#draft").focus(); $("#draft").scrollIntoView({block:"center"}); };
+  $("#cfOther").onclick=()=>openBoth();
+  $("#cfSkip").onclick=resetCard;
+  $("#card").querySelectorAll("[data-fb]").forEach(b=>b.onclick=()=>{ track("feedback", b.dataset.fb==="notmine"?"내 주장 아님":"빠진 근거"); $("#status").textContent=b.dataset.fb==="notmine"?"피드백 기록: '내 주장 아님' - 카드 품질 평가에만 쓰이고 누구의 점수도 바꾸지 않습니다.":"피드백 기록: '빠진 근거' - 다음 생성 시 참고합니다."; });
+  $("#status").textContent=`${(d.claims||[]).length}개 주장 · 근거 ${(d.evidence||[]).length}건 · 번호를 누르면 원댓글로 이동`;
+  renderPipe(4,{gen:`${side} 카드 생성 완료`,rub:"루브릭 검증 완료"}); renderRubric({[side]:d});
+}
+
+// ---------- rubric (rule-based checks on the card) ----------
+const JUDGE=/(틀렸|틀린|옳다|옳은|잘못됐|잘못된|억지|비합리|비논리|모순이다|무지|유치|말도 안|설득력이 없|근거 없는 주장|거짓|선동)/;
+function renderRubric(cards){
+  const items=[];
+  const idset=new Set(C.map(c=>c.id));
+  function one(side,d){
+    const claims=d.claims||[]; const noRef=claims.filter(c=>!(c.refs||[]).length||(c.refs||[]).some(n=>!idset.has(+n)));
+    const judged=[...claims.map(c=>c.text),...(d.not||[])].filter(t=>JUDGE.test(t));
+    const badEv=(d.evidence||[]).filter(e=>e.status==="verified"&&!(e.source&&T.sources[e.source]));
+    const shortInc=(d.included||[]).filter(n=>C.find(c=>c.id===+n)?.short);
+    const wrongSide=(d.included||[]).filter(n=>{const c=C.find(x=>x.id===+n); return c&&c.side!==side;});
+    return [
+      ["근거 충실성", noRef.length?"warn":"pass", noRef.length?`번호 없는 주장 ${noRef.length}건`:`주장 ${claims.length}건 모두 원댓글 번호에 연결`],
+      ["비판정성", judged.length?"warn":"pass", judged.length?`평가어 포함 문장 ${judged.length}건`:"평가어('틀렸다', '억지' 등) 없음"],
+      ["출처 상태 정합성", badEv.length?"warn":"pass", badEv.length?`'원문 확인됨'인데 링크 없는 항목 ${badEv.length}건`:`'원문 확인됨' ${(d.evidence||[]).filter(e=>e.status==="verified").length}건 모두 링크 원문 존재`],
+      ["포함 기준 준수", (shortInc.length||wrongSide.length)?"warn":"pass", (shortInc.length||wrongSide.length)?`짧은 반응 ${shortInc.length}건 · 타 입장 ${wrongSide.length}건 포함됨`:`포함 ${(d.included||[]).length}개 모두 같은 입장의 본문 댓글`]
+    ];
+  }
+  if(!cards){ ["근거 충실성","비판정성","출처 상태 정합성","포함 기준 준수","대칭성"].forEach(k=>items.push([k,"wait","카드 생성 후 검사"])); }
+  else{
+    const sides=Object.keys(cards); const rs=sides.map(s=>one(s,cards[s]));
+    rs[0].forEach((row,i)=>{ const all=rs.map(r=>r[i]); const st=all.some(r=>r[1]==="warn")?"warn":"pass"; items.push([row[0],st,sides.length>1?all.map((r,j)=>`${sides[j]}: ${r[2]}`).join(" / "):row[2]]); });
+    if(sides.length>1){ const a=cards[sides[0]],b=cards[sides[1]]; const dc=Math.abs((a.claims||[]).length-(b.claims||[]).length), de=Math.abs((a.evidence||[]).length-(b.evidence||[]).length), dl=Math.abs(JSON.stringify(a.claims||[]).length-JSON.stringify(b.claims||[]).length);
+      items.push(["대칭성",(dc>1||de>1||dl>400)?"warn":"pass",`주장 수 차이 ${dc} · 근거 수 차이 ${de} · 분량 차이 ${dl}자`]); }
+    else items.push(["대칭성","wait","'상대 카드도 보기'로 양쪽을 생성하면 검사"]);
+  }
+  if(cards) track("rubric", items.filter(i=>i[1]==="warn").map(i=>i[0]).join(", ")||"5항목 통과", {warn: items.some(i=>i[1]==="warn")});
+  $("#rub").innerHTML=items.map(([k,st,msg])=>`<div><span class="r ${st}">${st==="pass"?"통과":st==="warn"?"주의":"대기"}</span><span>${k}<small>${esc(msg)}</small></span></div>`).join("");
+}
+
+// ---------- live bias analysis (rule-based, instant) ----------
+const SIG = {
+  "인신공격·조롱": /(멍청|바보|꺼져|닥쳐|미친|병신|쓰레기|역겹|한심|유치|ㅉㅉ|감옥이냐|천지임|쟤네)/,
+  "동기 의심": /(정치질|포장임|공약 지키기|놀고 싶|통제하고 싶|선거 때문|믿을 수가 없|ㅇㅈ\?)/,
+  "진영 일반화": /((찬성|반대)(쪽|파|측)(은|이|들)? ?(늘|다|전부|맨날|항상|이런 식)|대부분 그냥|쪽 근거 늘)/,
+  "출처 없는 전언": /(들었음|하던데|카더라|라던데|체감임|얘기 들|알고 있음)/,
+  "논점 이탈": /(에어컨|급식|야식|매점|가수 누구|자러 가자|밤새|폰 수거함|음향 고장|몇 시임|2시임)/,
+  "과장 표현": /(천지|전부 다|절대|항상|무조건|다 앎|100%)/
+};
+const NUMS = /(\d+(?:\.\d+)?)\s*%/g;
+function analyze(text, side){
+  const t = text || ""; const sigs = Object.entries(SIG).filter(([k,re])=>re.test(t)).map(([k])=>k);
+  const links = (t.match(/\(S\d\)|S\d/g)||[]).map(x=>x.replace(/[()]/g,"")).filter(k=>T.sources[k]);
+  const nums = [...t.matchAll(NUMS)].map(m=>m[1]);
+  // 선택적 인용: 출처 수치를 인용했지만 같은 출처의 반대 수치(설문의 다음 문항 등)를 함께 언급하지 않음
+  let selective = null;
+  const PAIRS = { "61": ["44","38"], "61.1":["44","38"], "52":["31"], "92":["23"], "41":["33"], "46":["28"], "33":["41"], "28":["46"] };
+  for (const n of nums){ const k = Object.keys(PAIRS).find(p=>p===n||p===n.replace(".1","")); if (k && !PAIRS[k].some(o=>nums.includes(o)||t.includes(o+"%"))){ selective = `${n}%만 인용 - 같은 출처의 ${PAIRS[k][0]}% 미언급`; break; } }
+  if (selective) sigs.unshift("선택적 인용");
+  const unsourced = nums.length && !links.length ? "수치를 썼지만 링크(S1~S3) 없음" : null;
+  if (unsourced) sigs.push("출처 미표기 수치");
+  const heat = Math.min(1, .08 + (sigs.includes("인신공격·조롱")?.45:0) + (sigs.includes("동기 의심")?.3:0) + (sigs.includes("진영 일반화")?.2:0) + (sigs.includes("과장 표현")?.1:0) + ((t.match(/[!?]{2,}/g)||[]).length*.1) + (/너|당신|니가|님들/.test(t)?.08:0));
+  const drift = Math.min(1, (sigs.includes("논점 이탈")?.65:.08) + (sigs.includes("동기 의심")?.2:0) + (/학생회|문화부/.test(t)&&!/안건|설문|예산|야자|선택제|공연|동아리/.test(t)?.2:0));
+  // 입장 추정 (규칙): 키워드 투표
+  let stance = "중립";
+  let pro = (t.match(/선택제|자율|선택권|자기 주도|자기주도|연구 시간|동아리 지원|프로젝트|생산|찬성이잖아|찬성임|바꾸자|다수가 원|가둬|눈치/g)||[]).length, con = (t.match(/의무|유지|관리|안전|분위기|불참|사감|공연 유지|초청 공연은|홍보|없애면|44%|반 가까이/g)||[]).length;
+  if (/반대쪽|반대파|반대 측|의무제 유지하자는/.test(t)) pro++; if (/찬성쪽|찬성파|찬성 측|선택제 하자는/.test(t)) con++;
+  if (sigs.includes("논점 이탈") && pro+con===0) stance = "논점외"; else if (pro>con) stance="찬성"; else if (con>pro) stance="반대";
+  if (side) stance = side;
+  return { sigs, links, nums, selective, unsourced, heat:+heat.toFixed(2), drift:+drift.toFixed(2), stance };
+}
+function evidenceState(a){ if (a.links.length) return ["verified","링크 원문 인용: "+a.links.join(", ")]; if (a.nums.length) return ["unverified","수치는 있으나 출처 링크 없음"]; if (a.sigs.includes("출처 없는 전언")) return ["unverified","전언·체감 - 스레드 안에서 확인 불가"]; return ["summary","수치·링크 없는 의견"]; }
+let liveTimer=null, liveCtl=null, lastAI=null;
+function renderLive(a, ai){
+  const box=$("#live"); const stName={verified:"원문 확인됨",summary:"근거 없음(의견)",unverified:"출처 미확인"};
+  const [st,msg]=evidenceState(a); const s = ai?.stance || a.stance;
+  const sigChips = (ai?.signals?.length ? ai.signals : a.sigs);
+  const bar=(label,v,col)=>`<div class="gauge"><span>${label}</span><div class="bar"><i style="width:${Math.round(v*100)}%;background:${col}"></i></div><span class="v">${v.toFixed(2)}</span></div>`;
+  box.innerHTML = `<div class="hd"><span>실시간 분석 · 입력 중인 댓글</span><span id="liveMode">${ai?"AI 분석(LLM) · 규칙 보조":"규칙 기반"+(aiOn?" · 입력을 멈추면 AI 분석":"")}</span></div>
+    <div class="row2"><span class="side ${s}">${s}</span><span class="note" style="margin:0">입장 추정${ai?.confidence?` · 확신 ${Math.round(ai.confidence*100)}%`:""}</span>
+      <span class="st ${st}" style="margin-left:auto">${stName[st]}</span><span class="note" style="margin:0">${esc(msg)}</span></div>
+    <div class="row2">${sigChips.length ? sigChips.map(x=>`<span class="sig on">⚠ ${esc(x)}</span>`).join("") : `<span class="sig ok">✓ 편향 신호 없음</span>`}${a.selective?`<span class="note" style="margin:0">${esc(a.selective)}</span>`:""}</div>
+    ${bar("감정 격화도", ai?.heat ?? a.heat, "var(--heat)")}${bar("논점 이탈도", ai?.drift ?? a.drift, "var(--drift)")}
+    ${ai?.why?`<div class="ai-why">${esc(ai.why)}</div>`:""}
+    <div class="note" style="margin:0">${a.sigs.length||ai?.signals?.length ? "표시는 안내일 뿐입니다. 그대로 보낼 수 있고, 아무도 이 결과를 보지 못합니다." : "이 댓글을 등록하면 스레드 온도 그래프에 바로 반영됩니다."}</div>`;
+  previewChart(ai?.heat ?? a.heat, ai?.drift ?? a.drift);
+}
+function liveUpdate(){
+  const text=$("#draft").value.trim();
+  if(!text){ $("#live").innerHTML=`<div class="hd"><span>실시간 분석 · 입력 중인 댓글</span><span id="liveMode">${aiOn?"AI 연결됨":"규칙 기반"}</span></div><div class="note" style="margin:0">댓글을 입력하면 입장·편향 신호·근거 상태·온도 변화를 바로 보여줍니다. 결과는 작성자에게만 보이며 저장·공개되지 않습니다.</div>`; previewChart(null); lastAI=null; return; }
+  const a=analyze(text); lastAI=null; renderLive(a,null);
+  clearTimeout(liveTimer);
+  if(aiOn && sampleFn && text.length>=12){ liveTimer=setTimeout(async()=>{ if(liveCtl) liveCtl.abort(); liveCtl=new AbortController();
+    try{ const r=await sampleFn.json(`학교 학생 게시판 토론 "${T.title}"에 올라올 다음 댓글을 분석하세요. 어느 쪽이 옳은지 판정하지 말고, 작성자를 평가하지 마세요. JSON만:
+{"stance":"찬성|반대|중립|논점외","confidence":0.0,"signals":["해당 항목만: 인신공격·조롱, 동기 의심, 진영 일반화, 선택적 인용, 출처 없는 전언, 논점 이탈, 과장 표현"],"heat":0.0,"drift":0.0,"why":"한 문장(작성자에게 보여줄 중립적 설명)"}
+참고 링크 원문: ${sourcesText().slice(0,1500)}
+
+댓글: ${text}`,{modelTier:"quick",cache:false,signal:liveCtl.signal}); if($("#draft").value.trim()===text){ lastAI=r; renderLive(a,r); } }catch(e){} }, 900); }
+}
+let previewPt=null;
+function previewChart(h,d){ previewPt = (h==null)?null:{heat:h,drift:d}; drawChart(); }
+
+// ---------- thread-level bias aggregation ----------
+function renderBias(){
+  const keys=["선택적 인용","진영 일반화","동기 의심","인신공격·조롱","출처 없는 전언","논점 이탈","과장 표현"];
+  const agg={}; keys.forEach(k=>agg[k]={찬성:0,반대:0,중립:0,논점외:0});
+  C.filter(c=>!c.short).forEach(c=>{ const a=analyze(c.text,c.side); a.sigs.forEach(k=>{ if(agg[k]) agg[k][c.side]++; }); });
+  const max=Math.max(1,...keys.map(k=>SIDES.reduce((s,x)=>s+agg[k][x],0)));
+  $("#bias").innerHTML=keys.map(k=>{ const tot=SIDES.reduce((s,x)=>s+agg[k][x],0); return `<div><span>${k}</span><div class="bars">${SIDES.map(x=>agg[k][x]?`<i class="b" style="width:${Math.max(2,agg[k][x]/max*160)}px;background:${COL[x]}" title="${x} ${agg[k][x]}"></i>`:"").join("")}<span class="c">${SIDES.filter(x=>agg[k][x]).map(x=>`${x} ${agg[k][x]}`).join(" · ")||"0"}</span></div></div>`; }).join("");
+}
+
+// ---------- composer + one-time nudge ----------
+async function trySend(){
+  const text=$("#draft").value.trim(); if(!text) return; const a=analyze(text); let m={heat:lastAI?.heat??a.heat, drift:lastAI?.drift??a.drift, why:lastAI?.why, stance:lastAI?.stance||a.stance};
+  if(m.heat>=.5&&!nudged&&!nudgeOff){ nudged=true; $("#nudge").hidden=false;
+    $("#nudge").innerHTML=`<b>보내기 전에 한 번만 알려드려요</b>이 댓글은 상대를 향한 공격이나 동기 의심으로 읽힐 수 있습니다.${m.why?" "+esc(m.why):""} 그대로 보낼 수도 있고, 고칠 수도 있습니다. 이 안내는 다시 표시되지 않습니다.<div class="row"><button class="btn small" id="nSend">그대로 보내기</button><button class="btn small primary" id="nEdit">다시 쓰기</button><button class="off" id="nOff">안내 끄기</button></div>`;
+    track("nudge","전송 전 안내 표시");
+    $("#nSend").onclick=()=>{$("#nudge").hidden=true; track("nudge_send","안내 후 그대로 전송"); post(text,m);}; $("#nEdit").onclick=()=>{$("#nudge").hidden=true; track("nudge_edit","안내 후 다시 쓰기"); $("#draft").focus();}; $("#nOff").onclick=()=>{nudgeOff=true; $("#nudge").hidden=true; track("nudge_send","안내 끄고 전송"); post(text,m);}; return; }
+  post(text,m);
+}
+function post(text,m){ const id=Math.max(...C.map(c=>c.id))+1; const an=analyze(text); track("post", text.slice(0,60), {heat:m.heat, drift:m.drift, sigs:lastAI?.signals?.length?lastAI.signals:an.sigs, stance:m.stance||an.stance}); const links=(text.match(/\(S\d\)|S\d/g)||[]).map(x=>x.replace(/[()]/g,"")).filter(k=>T.sources[k]); C.push({id,who:"나",side:m.stance||"중립",t:(C[C.length-1]?.t||0)+.1,text,heat:m.heat,drift:m.drift,links}); $("#draft").value=""; liveUpdate(); filter="전체"; renderFilters(); renderThread(); drawChart(); renderStats(); renderBias(); renderPipe(); document.getElementById("c"+id)?.scrollIntoView({block:"center"}); }
+
+// ---------- telemetry (presence) ----------
+const SID = Math.random().toString(36).slice(2,8);
+const ST = { sid:SID, started:Date.now(), thread:"yaja", cardOpens:0, cardsAI:0, cardsPre:0, both:0, rubPass:0, rubWarn:0, posts:0, nudgeShown:0, nudgeSend:0, nudgeEdit:0, feedback:0, heatSum:0, driftSum:0, signals:{}, stances:{}, events:[], last:Date.now() };
+let roomNs=null, presTimer=null;
+function track(type, txt, extra){
+  ST.last=Date.now(); ST.thread=key;
+  if(type==="card"){ ST.cardOpens++; if(extra?.ai) ST.cardsAI++; else ST.cardsPre++; }
+  if(type==="both") ST.both++;
+  if(type==="rubric"){ if(extra?.warn) ST.rubWarn++; else ST.rubPass++; }
+  if(type==="post"){ ST.posts++; ST.heatSum+=extra.heat||0; ST.driftSum+=extra.drift||0; (extra.sigs||[]).forEach(k=>ST.signals[k]=(ST.signals[k]||0)+1); ST.stances[extra.stance]=(ST.stances[extra.stance]||0)+1; }
+  if(type==="nudge") ST.nudgeShown++; if(type==="nudge_send") ST.nudgeSend++; if(type==="nudge_edit") ST.nudgeEdit++; if(type==="feedback") ST.feedback++;
+  ST.events.unshift({t:Date.now(), type, txt:String(txt||"").slice(0,80)}); ST.events=ST.events.slice(0,6);
+  if(roomNs){ clearTimeout(presTimer); presTimer=setTimeout(()=>{ roomNs.presence({ st: JSON.parse(JSON.stringify(ST)) }).catch(()=>{}); }, 300); }
+}
+
+// ---------- dashboard ----------
+const DASH = { peers:[], cum:null, dbw:null, lastSaved:"" };
+const TYPE_KO={card:"맞대보기",both:"양쪽 카드",rubric:"루브릭",post:"댓글 등록",nudge:"안내 표시",nudge_send:"그대로 전송",nudge_edit:"다시 쓰기",feedback:"피드백",open:"세션 시작"};
+let dashOn=false; function isDash(){ return dashOn; }
+function setMode(on){ dashOn=!!on; document.body.classList.toggle("dash-mode", dashOn); $("#toDash").hidden=dashOn; $("#toDemo").hidden=!dashOn; if(roomNs) roomNs.presence({mode: dashOn?"dash":"demo"}).catch(()=>{}); if(dashOn) startDash(); else window.scrollTo(0,0); }
+function startDash(){
+  $("#dashUrl").textContent=location.hostname.endsWith("claude.ai")?"https://claude.ai/artifact/FZb524DjL8gyFCPGk5XTLC":(location.origin+location.pathname);
+  renderDash();
+}
+function sumStats(list){
+  const T={sessions:list.length, cardOpens:0,cardsAI:0,cardsPre:0,both:0,rubPass:0,rubWarn:0,posts:0,nudgeShown:0,nudgeSend:0,nudgeEdit:0,feedback:0,heatSum:0,driftSum:0,signals:{},stances:{}};
+  list.forEach(s=>{ ["cardOpens","cardsAI","cardsPre","both","rubPass","rubWarn","posts","nudgeShown","nudgeSend","nudgeEdit","feedback","heatSum","driftSum"].forEach(k=>T[k]+=s[k]||0); Object.entries(s.signals||{}).forEach(([k,v])=>T.signals[k]=(T.signals[k]||0)+v); Object.entries(s.stances||{}).forEach(([k,v])=>T.stances[k]=(T.stances[k]||0)+v); });
+  return T;
+}
+function renderDash(){
+  const live=DASH.peers.map(p=>p.presence?.st).filter(Boolean);
+  const L=sumStats(live); const cum=DASH.cum ? sumStats([DASH.cum, ...live]) : L;
+  const tile=(k,v,s,live)=>`<div class="tile ${live?"live":""}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s||""}</div></div>`;
+  $("#dtiles").innerHTML = tile("열린 세션", L.sessions, "지금 데모를 보는 화면", true) + tile("맞대보기", L.cardOpens, `AI 생성 ${L.cardsAI} · 미리 생성 ${L.cardsPre}`) + tile("양쪽 카드", L.both, "대칭 생성 횟수") + tile("댓글 등록", L.posts, L.posts?`평균 격화도 ${(L.heatSum/L.posts).toFixed(2)} · 이탈도 ${(L.driftSum/L.posts).toFixed(2)}`:"") + tile("전송 전 안내", L.nudgeShown, `그대로 ${L.nudgeSend} · 다시 쓰기 ${L.nudgeEdit}`) + tile("카드 피드백", L.feedback, "'내 주장 아님'·'빠진 근거'");
+  const bars=(obj,order,color)=>{ const max=Math.max(1,...Object.values(obj)); const keys=order||Object.keys(obj); return keys.filter(k=>obj[k]!=null).map(k=>`<div class="hbar"><span>${k}</span><div class="bar"><i style="width:${Math.round((obj[k]||0)/max*100)}%;${color?`background:${color(k)}`:""}"></i></div><span class="n">${obj[k]||0}</span></div>`).join("")||`<div class="note">아직 등록된 댓글이 없습니다</div>`; };
+  const sigKeys=["선택적 인용","진영 일반화","동기 의심","인신공격·조롱","출처 없는 전언","논점 이탈","과장 표현","출처 미표기 수치"];
+  const sig={}; sigKeys.forEach(k=>{ if(cum.signals[k]) sig[k]=cum.signals[k]; }); $("#dsig").innerHTML=bars(sig);
+  const stn={}; SIDES.forEach(k=>{ if(cum.stances[k]) stn[k]=cum.stances[k]; }); $("#dstance").innerHTML=bars(stn,null,k=>COL[k]);
+  $("#drub").innerHTML=bars({ "통과":cum.rubPass, "주의":cum.rubWarn }, null, k=>k==="통과"?"var(--ok)":"var(--warn)");
+  const ev=[]; DASH.peers.forEach((p,i)=>(p.presence?.st?.events||[]).forEach(e=>ev.push(Object.assign({sess:p.isMe?"나":"세션 "+String.fromCharCode(65+(i%26))},e)))); ev.sort((a,b)=>b.t-a.t);
+  $("#dfeed").innerHTML = ev.slice(0,40).map(e=>`<div><span class="t">${new Date(e.t).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span class="ty">${TYPE_KO[e.type]||e.type}</span><span>${esc(e.txt)} <span class="note">· ${e.sess}</span></span></div>`).join("") || `<div class="note">아직 활동이 없습니다. 데모 화면에서 [맞대보기]를 누르거나 댓글을 등록하면 여기에 바로 나타납니다.</div>`;
+  $("#dsess").innerHTML = DASH.peers.map((p,i)=>{ const st=p.presence?.st; const ago=st?Math.round((Date.now()-(st.last||st.started))/1000):null; return `<div><span class="${p.isMe?"me":""}">${p.isMe?"나(이 화면)":"세션 "+String.fromCharCode(65+(i%26))}${p.guest?" · 게스트":""}</span><span class="note">${st?`${st.thread==="yaja"?"야자":"축제"} 스레드 · 맞대보기 ${st.cardOpens} · 댓글 ${st.posts}`:(p.presence?.mode==="dash"?"대시보드 보는 중":"대시보드 또는 대기")}</span><span class="note">${ago!=null?(ago<60?`${ago}초 전`:`${Math.round(ago/60)}분 전`):""}</span></div>`; }).join("") || `<div class="note">연결 대기 중</div>`;
+  $("#dcum").textContent = DASH.cum ? `저장된 이전 세션 ${DASH.cum.sessions||0}개 포함 - 맞대보기 ${cum.cardOpens} · 댓글 ${cum.posts} · 양쪽 카드 ${cum.both} · 안내 ${cum.nudgeShown} (마지막 저장 ${DASH.cum.savedAt?new Date(DASH.cum.savedAt).toLocaleString("ko-KR"):"-"})` : "저장된 누적 데이터 없음 (소유자가 대시보드를 열어 두면 누적이 저장됩니다)";
+  maybePersist(live);
+}
+async function maybePersist(live){
+  if(!DASH.dbw) return; const ids=new Set(live.map(s=>s.sid)); 
+  // 떠난 세션은 누적에 접어 넣고, 현재 합계를 저장 (10초 간격, 변경 시)
+  const gone=(DASH.seen||[]).filter(s=>!ids.has(s.sid)); if(gone.length){ DASH.cum=Object.assign(sumStats([DASH.cum||{}, ...gone]), {sessions:((DASH.cum?.sessions)||0)+gone.length}); }
+  DASH.seen=live.map(s=>JSON.parse(JSON.stringify(s)));
+  const body=Object.assign({}, DASH.cum||sumStats([]), {savedAt:Date.now()}); const sig=JSON.stringify(Object.assign({},body,{savedAt:0}));
+  if(sig!==DASH.lastSaved && Date.now()-(DASH.lastSaveAt||0)>10000){ DASH.lastSaved=sig; DASH.lastSaveAt=Date.now(); try{ await DASH.dbw.set(body); }catch(e){} }
+}
+async function connectRoom(){
+  try{ roomNs = window.claude?.use ? await window.claude.use("room") : null; }catch(e){ roomNs=null; }
+  if(!roomNs){ $("#dashState").textContent="실시간 연결 없음 (이 화면의 활동만 표시)"; DASH.peers=[{isMe:true,presence:{st:ST}}]; renderDash(); return; }
+  roomNs.onPeers(ch=>{ DASH.peers=ch.peers.slice(); if(isDash()) renderDash(); }, ()=>{});
+  roomNs.presence({ mode: isDash()?"dash":"demo", st: JSON.parse(JSON.stringify(ST)) }).catch(()=>{});
+  $("#dashState").innerHTML=`<span class="pulse"></span>실시간 연결됨`;
+  try{ const db = await window.claude.use("db"); const user = await window.claude.use("user"); const can = user ? await user.can("data.write") : null;
+    if(db){ const ref=db.doc("stats/latest"); try{ const snap=await ref.get(); if(snap.exists) DASH.cum=snap.data(); }catch(e){} if(can!==false && user && (await user.canEdit())) DASH.dbw=ref; }
+  }catch(e){}
+  if(isDash()) renderDash();
+}
+$("#toDash").onclick=()=>setMode(true); $("#toDemo").onclick=()=>setMode(false);
+$("#copyUrl").onclick=()=>{ const t=$("#dashUrl").textContent; navigator.clipboard?.writeText(t).then(()=>{$("#copyUrl").textContent="복사됨";setTimeout(()=>$("#copyUrl").textContent="복사",1500);}).catch(()=>{ const r=document.createRange(); r.selectNodeContents($("#dashUrl")); getSelection().removeAllRanges(); getSelection().addRange(r); }); };
+setInterval(()=>{ if(isDash()) renderDash(); }, 5000);
+
+// ---------- boot ----------
+$("#preset").onchange=e=>load(e.target.value); $("#send").onclick=trySend; $("#draft").addEventListener("input",liveUpdate); load("yaja"); track("open","세션 시작"); if(location.hash) try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} setMode(false); connectRoom();
+(async()=>{ try{ sampleFn = window.claude?.use ? await window.claude.use("sample") : null; }catch(e){ sampleFn=null; } aiOn=!!sampleFn; $("#aiState").textContent=aiOn?"AI 연결됨 · 카드·실시간 분석은 요청 시 (첫 호출에 허용 확인)":"AI 없음 · 미리 생성된 카드 + 규칙 기반 분석"; liveUpdate(); })();
+</script>
